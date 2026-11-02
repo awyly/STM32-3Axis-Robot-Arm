@@ -74,8 +74,8 @@ virtualFolder:
           folders: []
     - name: Mylib
       files:
-        - path: ../Mylib/Emm_V5.c
-        - path: ../Mylib/Emm_V5.h
+        - path: ../Mylib/motor.c
+        - path: ../Mylib/motor.h
       folders: []
     - name: Mytask
       files:

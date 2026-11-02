@@ -1428,14 +1428,14 @@
           <GroupName>Mylib</GroupName>
           <Files>
             <File>
-              <FileName>Emm_V5.c</FileName>
+              <FileName>motor.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\Mylib\Emm_V5.c</FilePath>
+              <FilePath>..\Mylib\motor.c</FilePath>
             </File>
             <File>
-              <FileName>Emm_V5.h</FileName>
+              <FileName>motor.h</FileName>
               <FileType>5</FileType>
-              <FilePath>..\Mylib\Emm_V5.h</FilePath>
+              <FilePath>..\Mylib\motor.h</FilePath>
             </File>
           </Files>
         </Group>

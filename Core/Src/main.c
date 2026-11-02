@@ -26,7 +26,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include "motor.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -97,7 +97,9 @@ int main(void)
   MX_USART3_UART_Init();
   MX_TIM1_Init();
   /* USER CODE BEGIN 2 */
+  HAL_Delay(2000);
   HAL_TIM_Base_Start_IT(&htim1);
+
   /* USER CODE END 2 */
 
   /* Call init function for freertos objects (in cmsis_os2.c) */
@@ -189,20 +191,21 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
   /* USER CODE BEGIN Callback 1 */
   if (htim->Instance == TIM1)
   {
-    static uint8_t count = 0;
+    static uint16_t count = 0;
     static uint8_t last_key_state = 1;
     static uint8_t cur_key_state = 1;
     count++;
-    if (count >= 20)
+    if (count >= 1000)
     {
       count = 0;
-      last_key_state = cur_key_state;
-      cur_key_state = HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_0);
-      if (last_key_state == 0 && cur_key_state == 1)
-      {
-        key_count++;
-        HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_2);
-      }
+      HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_2);
+      // last_key_state = cur_key_state;
+      // cur_key_state = HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_0);
+      // if (last_key_state == 0 && cur_key_state == 1)
+      // {
+      //   key_count++;
+      //   HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_2);
+      // }
     }
   }
   /* USER CODE END Callback 1 */
