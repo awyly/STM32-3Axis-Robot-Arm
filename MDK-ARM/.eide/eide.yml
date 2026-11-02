@@ -72,6 +72,16 @@ virtualFolder:
             - path: ../Middlewares/Third_Party/FreeRTOS/Source/portable/MemMang/heap_4.c
             - path: ../Middlewares/Third_Party/FreeRTOS/Source/portable/RVDS/ARM_CM4F/port.c
           folders: []
+    - name: Mylib
+      files:
+        - path: ../Mylib/Emm_V5.c
+        - path: ../Mylib/Emm_V5.h
+      folders: []
+    - name: Mytask
+      files:
+        - path: ../MyTask/run.c
+        - path: ../MyTask/run.h
+      folders: []
     - name: ::CMSIS
       files: []
       folders: []
@@ -94,6 +104,8 @@ targets:
         - ../Middlewares/Third_Party/FreeRTOS/Source/include
         - ../Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS
         - ../Middlewares/Third_Party/FreeRTOS/Source/portable/RVDS/ARM_CM4F
+        - ../Mylib
+        - ../MyTask
         - .cmsis/include
         - RTE/_3DOF_ARM
       libList: []
