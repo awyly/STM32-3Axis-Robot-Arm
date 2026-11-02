@@ -79,5 +79,5 @@ int QuickPositionModeControl(Motor* motor, float angle)
 void StartAllMotors(Motor* motor)
 {
     static uint8_t SendBuffer[4] = {0x00, 0xFF, 0x66, 0x6B};
-    HAL_UART_Transmit(motor->huart, SendBuffer, 4, 100);
+    HAL_UART_Transmit_DMA(motor->huart, SendBuffer, 4);
 }
