@@ -13,7 +13,13 @@ typedef struct{
     uint8_t RealTimePositionRxBuffer[8];
 }Motor;
 
+typedef enum
+{
+    MOTOR_DISABLE,
+    MOTOR_ENABLE
+} MotorEnableState;
 
+void EnableMotorControl(Motor* motor , MotorEnableState enable_state);
 void SetMotorZeroPosition(Motor* motor);
 void ReachMotorPosition(Motor* motor, uint8_t mode);
 void QuickPositionModeInit(Motor* motor, uint16_t speed, uint8_t acceleration, uint8_t mode, uint8_t flag);

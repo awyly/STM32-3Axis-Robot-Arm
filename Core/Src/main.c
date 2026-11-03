@@ -60,7 +60,10 @@ void MX_FREERTOS_Init(void);
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 int key_count = 0;
-Motor motor1 = {0x03, &huart3};
+Motor motor1 = {0x01, &huart2};
+Motor motor2 = {0x02, &huart3};
+uint8_t arr[10];
+Motor motor3 = {0x03, &huart3};
 /* USER CODE END 0 */
 
 /**
@@ -99,8 +102,20 @@ int main(void)
   /* USER CODE BEGIN 2 */
   HAL_Delay(2000);
   HAL_TIM_Base_Start_IT(&htim1);
-  // SetMotorZeroPosition(&motor1);
 
+  // SetMotorZeroPosition(&motor1);
+  // HAL_Delay(5);
+  // SetMotorZeroPosition(&motor2);
+  // HAL_Delay(5);
+  // SetMotorZeroPosition(&motor3);
+  // HAL_Delay(5);
+
+  // EnableMotorControl(&motor1, MOTOR_ENABLE);
+  //  HAL_Delay(5);
+  // EnableMotorControl(&motor2, MOTOR_ENABLE);
+  //  HAL_Delay(5);
+  // EnableMotorControl(&motor3, MOTOR_ENABLE);
+  //  HAL_Delay(5);
   /* USER CODE END 2 */
 
   /* Call init function for freertos objects (in cmsis_os2.c) */

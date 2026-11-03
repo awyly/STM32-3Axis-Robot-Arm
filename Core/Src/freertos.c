@@ -45,7 +45,8 @@
 
 /* Private variables ---------------------------------------------------------*/
 /* USER CODE BEGIN Variables */
-
+SemaphoreHandle_t semaphore;
+SemaphoreHandle_t xMotorControlSemaphore;
 /* USER CODE END Variables */
 osThreadId defaultTaskHandle;
 
@@ -90,7 +91,8 @@ void MX_FREERTOS_Init(void) {
 
   /* USER CODE BEGIN RTOS_SEMAPHORES */
   /* add semaphores, ... */
-
+  semaphore = xSemaphoreCreateBinary();
+  xMotorControlSemaphore = xSemaphoreCreateBinary();
   /* USER CODE END RTOS_SEMAPHORES */
 
   /* USER CODE BEGIN RTOS_TIMERS */
@@ -109,6 +111,7 @@ void MX_FREERTOS_Init(void) {
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
   xTaskCreate(MotorControlTask, "MotorControlTask", 256, NULL, 3, NULL);
+  xTaskCreate(Kinematics, "Kinematics", 256, NULL, 3, NULL);
   /* USER CODE END RTOS_THREADS */
 
 }
