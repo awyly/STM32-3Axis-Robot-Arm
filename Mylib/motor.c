@@ -1,5 +1,5 @@
 #include "motor.h"
-
+#define DEG_TO_RAD (3.14159265358979323846 / 180.0)
 /**
  * @brief 设置零位(记忆零位)
  * @param motor: 指向Motor结构体的指针，包含电机ID和UART句柄
@@ -100,10 +100,10 @@ void RealTimePositionHandle(Motor* motor, uint8_t* RxBuffer, uint16_t Size)
         int8_t direction = (RxBuffer[2] == 0) ? 1 : -1;
         int64_t ReadPosition = (RxBuffer[3] << 24) | (RxBuffer[4] << 16) | (RxBuffer[5] << 8) | RxBuffer[6];
         if(motor->motor_id == 0x01) 
-            motor->current_angle = -direction*ReadPosition* (360/65536.0f) * 3/10.0f;
+            motor->current_angle = -direction*ReadPosition* (360/65536.0f) * 3/10.0f*DEG_TO_RAD;
         else if(motor->motor_id == 0x02)
-            motor->current_angle = ReadPosition * (360/65536.0f) * direction;
+            motor->current_angle = ReadPosition * (360/65536.0f) * direction*DEG_TO_RAD;
         else if(motor->motor_id == 0x03)
-            motor->current_angle = ReadPosition * (360/65536.0f) * -direction;
+            motor->current_angle = ReadPosition * (360/65536.0f) * -direction*DEG_TO_RAD;
     }
 }
