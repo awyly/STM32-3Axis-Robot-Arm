@@ -81,3 +81,29 @@ void StartAllMotors(Motor* motor)
     static uint8_t SendBuffer[4] = {0x00, 0xFF, 0x66, 0x6B};
     HAL_UART_Transmit_DMA(motor->huart, SendBuffer, 4);
 }
+
+void ReadMotorPosition(Motor* motor)
+{
+    static uint8_t SendBuffer[3];
+    SendBuffer[0] = motor->motor_id;
+    SendBuffer[1] = 0x36;
+    SendBuffer[2] = 0x6B;
+    HAL_UART_Transmit_DMA(motor->huart, SendBuffer, 3);
+    HAL_UARTEx_ReceiveToIdle_DMA(motor->huart, motor->RealTimePositionRxBuffer, 8);
+    __HAL_DMA_DISABLE_IT(motor->huart->hdmarx, DMA_IT_HT);
+}
+
+void RealTimePositionHandle(Motor* motor, uint8_t* RxBuffer, uint16_t Size)
+{
+    if(motor->motor_id == RxBuffer[0] && Size == 8)
+    {
+        int8_t direction = (RxBuffer[2] == 0) ? 1 : -1;
+        int64_t ReadPosition = (RxBuffer[3] << 24) | (RxBuffer[4] << 16) | (RxBuffer[5] << 8) | RxBuffer[6];
+        if(motor->motor_id == 0x01) 
+            motor->current_angle = -direction*ReadPosition* (360/65536.0f) * 3/10.0f;
+        else if(motor->motor_id == 0x02)
+            motor->current_angle = ReadPosition * (360/65536.0f) * direction;
+        else if(motor->motor_id == 0x03)
+            motor->current_angle = ReadPosition * (360/65536.0f) * -direction;
+    }
+}

@@ -31,21 +31,25 @@ void MotorControlTask(void *argument)
         vTaskDelay(pdMS_TO_TICKS(20));
     }
 
-    TickType_t lastWakeTime = xTaskGetTickCount();
+    
     while(1)
     {
-
+        for(int i = 0; i < 3; i++)
+        {
+            ReadMotorPosition(&motor[i]);
+            vTaskDelay(pdMS_TO_TICKS(5));
+        }
         for(int i = 0; i < 3; i++)
         {
             if (i == 1 || i == 2) QuickPositionModeControl(&motor[i], -motor[i].expected_angle);
             else QuickPositionModeControl(&motor[i], motor[i].expected_angle * 10/3.0f);
-            vTaskDelay(pdMS_TO_TICKS(4));
+            vTaskDelay(pdMS_TO_TICKS(3));
         }
             StartAllMotors(&motor[0]);
             vTaskDelay(pdMS_TO_TICKS(4));
             StartAllMotors(&motor[1]);
         
-        vTaskDelayUntil(&lastWakeTime, pdMS_TO_TICKS(12));
+        vTaskDelay(pdMS_TO_TICKS(5));
     }
 }
 
@@ -53,20 +57,17 @@ void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
 {
     if (huart->Instance == USART2 || huart->Instance == USART3)
     {
-        BaseType_t higherPriorityTaskWoken = pdFALSE;
-        xSemaphoreGiveFromISR(xMotorControlSemaphore, &higherPriorityTaskWoken);
-        portYIELD_FROM_ISR(higherPriorityTaskWoken);
+      
     }
 }
 
 void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size)
 {
-    if (huart->Instance == USART2 )
+    if (huart->Instance == USART2 || huart->Instance == USART3)
     {
-     2;
-    }
-    else if (huart->Instance == USART3)
-    {
-        3;
-    }
+        for(int i = 0; i < 3; i++)
+        {
+            RealTimePositionHandle(&motor[i], motor[i].RealTimePositionRxBuffer, Size);
+        } 
+    }  
 }

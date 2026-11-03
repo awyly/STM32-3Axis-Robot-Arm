@@ -60,7 +60,7 @@ void MX_FREERTOS_Init(void);
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 int key_count = 0;
-
+Motor motor1 = {0x03, &huart3};
 /* USER CODE END 0 */
 
 /**
@@ -99,6 +99,7 @@ int main(void)
   /* USER CODE BEGIN 2 */
   HAL_Delay(2000);
   HAL_TIM_Base_Start_IT(&htim1);
+  // SetMotorZeroPosition(&motor1);
 
   /* USER CODE END 2 */
 
