@@ -59,7 +59,8 @@ void MX_FREERTOS_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-int key_count = 0;
+extern int flag;
+int key_cnt_1 = 0;
 Motor motor1 = {0x01, &huart2};
 Motor motor2 = {0x02, &huart3};
 uint8_t arr[10];
@@ -116,6 +117,13 @@ int main(void)
   //  HAL_Delay(5);
   // EnableMotorControl(&motor3, MOTOR_ENABLE);
   //  HAL_Delay(5);
+
+  // EnableMotorControl(&motor1, MOTOR_DISABLE);
+  // HAL_Delay(5);
+  // EnableMotorControl(&motor2, MOTOR_DISABLE);
+  // HAL_Delay(5);
+  // EnableMotorControl(&motor3, MOTOR_DISABLE);
+  // HAL_Delay(5);
   /* USER CODE END 2 */
 
   /* Call init function for freertos objects (in cmsis_os2.c) */
@@ -207,21 +215,29 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
   /* USER CODE BEGIN Callback 1 */
   if (htim->Instance == TIM1)
   {
-    static uint16_t count = 0;
+    static uint16_t cnt_1 = 0;
+    static uint16_t cnt_2 = 0;
     static uint8_t last_key_state = 1;
     static uint8_t cur_key_state = 1;
-    count++;
-    if (count >= 1000)
+    cnt_1++;
+    if (cnt_1 >= 20)
     {
-      count = 0;
+      cnt_1 = 0;
+     
+      last_key_state = cur_key_state;
+      cur_key_state = HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_0);
+      if (last_key_state == 0 && cur_key_state == 1)
+      {
+        flag++;
+        flag = flag % 5;
+      }
+    }
+
+    cnt_2++;
+    if (cnt_2 >= 1000)
+    {
+      cnt_2 = 0;
       HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_2);
-      // last_key_state = cur_key_state;
-      // cur_key_state = HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_0);
-      // if (last_key_state == 0 && cur_key_state == 1)
-      // {
-      //   key_count++;
-      //   HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_2);
-      // }
     }
   }
   /* USER CODE END Callback 1 */

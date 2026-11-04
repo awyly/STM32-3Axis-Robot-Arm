@@ -56,6 +56,7 @@ void MotorControlTask(void *argument)
 
 float target_position[3] = {16.8, -6, 5.5};
 float joint_angle[3];
+int flag = 0;
 void Kinematics(void *arugument)
 {
     while(1)
@@ -67,6 +68,31 @@ void Kinematics(void *arugument)
             vTaskDelay(pdMS_TO_TICKS(3));
         }
         ForwardKinematics(motor, current_position);
+        
+        if(flag == 1)
+        {
+            target_position[0] = 1.768;
+            target_position[1] = 1.4;
+            target_position[2] = 26.3;
+        }
+        else if(flag == 2)
+        {
+            target_position[0] = 21.59;
+            target_position[1] = -1.75;
+            target_position[2] = 12.7;
+        }
+        else if(flag == 3)
+        {
+            target_position[0] = 15.75;
+            target_position[1] = -13.77;
+            target_position[2] = 6.291;
+        }
+        else if(flag == 4)
+        {
+            target_position[0] = 10;
+            target_position[1] = 15;
+            target_position[2] = 10;
+        }
         InverseKinematics(target_position, joint_angle);
         for(int i = 0; i < 3; i++)
         {
