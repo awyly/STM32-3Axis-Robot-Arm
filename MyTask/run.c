@@ -5,9 +5,11 @@
 
 extern SemaphoreHandle_t xMotorControlSemaphore;
 extern SemaphoreHandle_t semaphore;
-#define DEG_TO_RAD (3.14159265358979323846 / 180.0)
-#define RAD_TO_DEG (180.0 / 3.14159265358979323846)
+#define DEG_TO_RAD (3.14159265358979323846f / 180.0f)
+#define RAD_TO_DEG (180.0f / 3.14159265358979323846f)
+#define MOTOR_STEP_RAD    0.05f
 uint8_t RxBuffer[4];
+float target_position[3] = {16.8, -6, 5.5};
 float current_position[3];
 Motor motor[3] = {
     {0x01, &huart2},
@@ -38,6 +40,8 @@ void MotorControlTask(void *argument)
     while(1)
     {
         xSemaphoreTake(xMotorControlSemaphore,portMAX_DELAY);
+        // 用本轮刚读回的关节角迭代求解，收敛后才写expected_angle，未收敛则保持上一次的值
+        IK_CoordinateDescent(target_position, motor);
         for(int i = 0; i < 3; i++)
         {
             if (i == 1 || i == 2) QuickPositionModeControl(&motor[i], -motor[i].expected_angle);
@@ -54,7 +58,7 @@ void MotorControlTask(void *argument)
     }
 }
 
-float target_position[3] = {16.8, -6, 5.5};
+
 float joint_angle[3];
 int flag = 0;
 void Kinematics(void *arugument)
@@ -68,7 +72,7 @@ void Kinematics(void *arugument)
             vTaskDelay(pdMS_TO_TICKS(3));
         }
         ForwardKinematics(motor, current_position);
-        
+
         if(flag == 1)
         {
             target_position[0] = 1.768;
@@ -93,11 +97,11 @@ void Kinematics(void *arugument)
             target_position[1] = 15;
             target_position[2] = 10;
         }
-        InverseKinematics(target_position, joint_angle);
-        for(int i = 0; i < 3; i++)
-        {
-          motor[i].expected_angle = joint_angle[i] * RAD_TO_DEG;
-        }
+        // InverseKinematics(target_position, joint_angle);
+        // for(int i = 0; i < 3; i++)
+        // {
+        //   motor[i].expected_angle = joint_angle[i] * RAD_TO_DEG;
+        // }
         xSemaphoreTake(xMotorControlSemaphore,0);
         xSemaphoreGive(xMotorControlSemaphore);
         vTaskDelay(pdMS_TO_TICKS(3));
@@ -187,5 +191,98 @@ int InverseKinematics(const float* target_position, float* joint_angle)
     joint_angle[0] = theta1;
     joint_angle[1] = theta2;
     joint_angle[2] = theta3;
+    return 0;
+}
+
+#define IK_TOLERANCE_CM   0.2f    // 末端误差小于该值即认为到达目标
+#define IK_STEP_MIN_RAD   0.0005f // 步长缩小到该值仍无法改善即停止
+#define IK_MAX_RESTART    12      // 卡在局部最小值时的扰动重启次数
+#define ARM_THETA2_MIN_RAD 0.0f   // 大臂下限(水平)，再往下会压到下方齿轮造成堵转
+#define IK_INFEASIBLE     1.0e6f  // 越过关节限位的候选角度的误差值
+
+static float PositionError(const float* angle, const float* target)
+{
+    if (angle[1] < ARM_THETA2_MIN_RAD)
+        return IK_INFEASIBLE;
+    Motor m[3];
+    m[0].current_angle = angle[0];
+    m[1].current_angle = angle[1];
+    m[2].current_angle = angle[2];
+    float p[3];
+    ForwardKinematics(m, p);
+    float dx = target[0] - p[0];
+    float dy = target[1] - p[1];
+    float dz = target[2] - p[2];
+    return sqrtf(dx * dx + dy * dy + dz * dz);
+}
+
+// 线性同余，只在求解内部使用，避免调用库rand带来的重入和栈开销
+static uint32_t ik_rng = 0x6C8E9CF5u;
+static float IK_RandSigned(void)
+{
+    ik_rng = ik_rng * 1664525u + 1013904223u;
+    return ((int32_t)ik_rng / 2147483648.0f);
+}
+
+/**
+ * @brief 坐标下降法求逆解：从当前反馈关节角出发，每次只改一个关节，
+ *        沿误差减小的方向前进；三个关节都无法改善时把步长减半，
+ *        缩小到极限仍未收敛则在当前最优解附近扰动后重新下降，跳出局部最小值
+ * @param target_position: 目标点在基座坐标系下的坐标{x, y, z}(cm)
+ * @param motor: 三个关节，读取current_angle(弧度)，收敛后写expected_angle(角度)
+ * @retval 0: 误差小于IK_TOLERANCE_CM，已写expected_angle
+ *        -1: 未收敛，expected_angle保持不变
+ */
+int IK_CoordinateDescent(const float* target_position, Motor* motor)
+{
+    float angle[3] = {motor[0].current_angle, motor[1].current_angle, motor[2].current_angle};
+    // 回零附近的反馈可能略小于0，先夹到限位上，否则起点本身就被判为不可行
+    if (angle[1] < ARM_THETA2_MIN_RAD)
+        angle[1] = ARM_THETA2_MIN_RAD;
+    float best[3] = {angle[0], angle[1], angle[2]};
+    float error = PositionError(angle, target_position);
+    float best_error = error;
+
+    for (int restart = 0; restart <= IK_MAX_RESTART && best_error > IK_TOLERANCE_CM; restart++)
+    {
+        float step = MOTOR_STEP_RAD;
+        if (restart > 0)
+        {
+            float spread = 0.6f * restart;
+            angle[0] = best[0] + IK_RandSigned() * spread;
+            angle[1] = best[1] + IK_RandSigned() * spread;
+            angle[2] = best[2] + IK_RandSigned() * spread;
+            if (angle[1] < ARM_THETA2_MIN_RAD)
+                angle[1] = ARM_THETA2_MIN_RAD;
+            error = PositionError(angle, target_position);
+        }
+        while (error > IK_TOLERANCE_CM && step >= IK_STEP_MIN_RAD)
+        {
+            int improved = 0;
+            for (int j = 0; j < 3; j++)
+            {
+                angle[j] += step;
+                float e = PositionError(angle, target_position);
+                if (e < error) { error = e; improved = 1; continue; }
+
+                angle[j] -= 2.0f * step;
+                e = PositionError(angle, target_position);
+                if (e < error) { error = e; improved = 1; continue; }
+
+                angle[j] += step; // 两个方向都没有改善，恢复原值
+            }
+            if (!improved) step *= 0.5f;
+        }
+        if (error < best_error)
+        {
+            best_error = error;
+            best[0] = angle[0]; best[1] = angle[1]; best[2] = angle[2];
+        }
+    }
+
+    if (best_error > IK_TOLERANCE_CM)
+        return -1;
+    for (int i = 0; i < 3; i++)
+        motor[i].expected_angle = best[i] * RAD_TO_DEG;
     return 0;
 }
